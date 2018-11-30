@@ -1,0 +1,19 @@
+service cloud.firestore {
+  match /databases/{database}/documents {
+  	function is_admin(){
+    	return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.roles.admin
+    }
+    function valid_create(){
+    	return !request.resource.data.roles.admin
+    }
+    
+    function valid_update(){
+    	return (request.auth.token.email_verified && !request.resource.data.roles.admin)
+    }
+    match /users/{uid}{
+    	allow read: if request.auth.uid == uid || is_admin();
+      allow create: if (request.auth.uid == uid && valid_create())||is_admin();
+      allow update: if (request.auth.uid == uid && valid_update())||is_admin();
+    }
+  }
+}
